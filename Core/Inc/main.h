@@ -73,7 +73,7 @@ void Error_Handler(void);
 #define AIN2_GPIO_Port GPIOB
 #define AIN1_Pin GPIO_PIN_13
 #define AIN1_GPIO_Port GPIOB
-#define STBY_Pin GPIO_PIN_14
+#define STBY_Pin GPIO_PIN_15
 #define STBY_GPIO_Port GPIOB
 #define Boton_Pin GPIO_PIN_9
 #define Boton_GPIO_Port GPIOB
