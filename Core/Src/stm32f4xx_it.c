@@ -225,7 +225,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
   contador++;
-  if(contador == 20)
+  if(contador == 2)
   {
     HAL_GPIO_TogglePin(Led3_GPIO_Port, Led3_Pin);
     contador = 0;

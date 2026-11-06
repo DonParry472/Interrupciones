@@ -27,6 +27,7 @@
 #include "math.h"
 #include "uart.h"
 #include "UARTRX.h"
+#include "PWMB.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,6 +47,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
@@ -60,6 +62,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -79,6 +82,30 @@ void procesa_rx(void)
     else if (strstr((char *)UARTRX1.trama_rx, "TOGGLE") != NULL)
     {
         HAL_GPIO_TogglePin(Led5_GPIO_Port, Led5_Pin);
+    }
+    else if (strstr((char *)UARTRX1.trama_rx, "LOW") != NULL)
+    {
+      PWM_valor(&PWM1, 10);
+    }
+    else if (strstr((char *)UARTRX1.trama_rx, "LOWM") != NULL)
+    {
+      PWM_valor(&PWM1, 25);
+    }
+    else if (strstr((char *)UARTRX1.trama_rx, "MEDIUM") != NULL)
+    {
+      PWM_valor(&PWM1, 50);
+    }
+    else if (strstr((char *)UARTRX1.trama_rx, "MEDIUMH") != NULL)
+    {
+      PWM_valor(&PWM1, 75);
+    }
+    else if (strstr((char *)UARTRX1.trama_rx, "HIGH") != NULL)
+    {
+      PWM_valor(&PWM1, 90);
+    }
+    else if (strstr((char *)UARTRX1.trama_rx, "ZERO") != NULL)
+    {
+      PWM_valor(&PWM1, 0);
     }
 }
 /* USER CODE END 0 */
@@ -115,9 +142,14 @@ int main(void)
   MX_DMA_Init();
   MX_TIM1_Init();
   MX_USART1_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim1);
   uartRX_it_idle_dma_init(&UARTRX1);
+  PWM_init(&PWM1);
+  HAL_GPIO_WritePin(STBY_GPIO_Port, STBY_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(AIN1_GPIO_Port, AIN1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(AIN2_GPIO_Port, AIN2_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -125,7 +157,7 @@ int main(void)
   while (1)
   {
     HAL_GPIO_TogglePin(Led1_GPIO_Port, Led1_Pin);
-    HAL_Delay(200);
+    HAL_Delay(500);
     if (UARTRX1.flag_rx==1)
 	  {
 	    //uartx_write_text(&huart1, UARTRX1.trama_rx);
@@ -199,9 +231,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 1600-1;
+  htim1.Init.Prescaler = 16000-1;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 99;
+  htim1.Init.Period = 700-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -223,6 +255,65 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 16;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 12500;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
 
 }
 
@@ -292,29 +383,32 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, Led1_Pin|Led2_Pin|Led3_Pin|Led4_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, Led1_Pin|Led2_Pin|Led3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(Led5_GPIO_Port, Led5_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, Led4_Pin|Led5_Pin|AIN2_Pin|AIN1_Pin
+                          |STBY_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Led1_Pin Led2_Pin Led3_Pin Led4_Pin */
-  GPIO_InitStruct.Pin = Led1_Pin|Led2_Pin|Led3_Pin|Led4_Pin;
+  /*Configure GPIO pins : Led1_Pin Led2_Pin Led3_Pin */
+  GPIO_InitStruct.Pin = Led1_Pin|Led2_Pin|Led3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Led5_Pin */
-  GPIO_InitStruct.Pin = Led5_Pin;
+  /*Configure GPIO pins : Led4_Pin Led5_Pin AIN2_Pin AIN1_Pin
+                           STBY_Pin */
+  GPIO_InitStruct.Pin = Led4_Pin|Led5_Pin|AIN2_Pin|AIN1_Pin
+                          |STBY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(Led5_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : Boton_Pin */
   GPIO_InitStruct.Pin = Boton_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(Boton_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
