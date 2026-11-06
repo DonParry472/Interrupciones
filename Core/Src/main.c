@@ -85,11 +85,11 @@ void procesa_rx(void)
     }
     else if (strstr((char *)UARTRX1.trama_rx, "LOW") != NULL)
     {
-      PWM_valor(&PWM1, 35);
+      PWM_valor(&PWM1, 30);
     }
     else if (strstr((char *)UARTRX1.trama_rx, "MEDIUM") != NULL)
     {
-      PWM_valor(&PWM1, 50);
+      PWM_valor(&PWM1, 60);
     }
     else if (strstr((char *)UARTRX1.trama_rx, "HIGH") != NULL)
     {
